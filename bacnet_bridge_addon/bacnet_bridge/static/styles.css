@@ -129,10 +129,12 @@ button.primary {
 
 button.danger {
   color: var(--danger);
+  padding: 0 10px;
 }
 
 button.secondary {
-  min-width: 58px;
+  min-width: 54px;
+  padding: 0 10px;
 }
 
 button.unpublish {
@@ -148,7 +150,13 @@ select {
 }
 
 .instance-input {
-  width: 88px;
+  width: 82px;
+}
+
+.instance-input.is-invalid {
+  border-color: var(--danger);
+  color: var(--danger);
+  box-shadow: 0 0 0 1px rgba(161, 60, 60, 0.35);
 }
 
 .instance-text {
@@ -159,8 +167,20 @@ select {
 .object-edit {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin-top: 6px;
+}
+
+.field-error {
+  display: none;
+  margin-top: 5px;
+  color: var(--danger);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.field-error.is-visible {
+  display: block;
 }
 
 .status-grid {
@@ -203,7 +223,7 @@ select {
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(720px, 1.25fr) minmax(420px, 0.75fr);
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
   gap: 16px;
   flex: 1 1 auto;
   min-height: 0;
@@ -239,6 +259,11 @@ table {
 }
 
 .layout .panel:first-child table {
+  table-layout: fixed;
+  min-width: 0;
+}
+
+.layout .panel:last-child table {
   table-layout: fixed;
   min-width: 0;
 }
@@ -294,6 +319,23 @@ td:last-child {
   padding-right: 12px;
 }
 
+.layout .panel:last-child th:nth-child(1),
+.layout .panel:last-child td:nth-child(1) {
+  width: 176px;
+}
+
+.layout .panel:last-child th:nth-child(3),
+.layout .panel:last-child td:nth-child(3) {
+  width: 72px;
+}
+
+.layout .panel:last-child th:last-child,
+.layout .panel:last-child td:last-child {
+  width: 104px;
+  min-width: 104px;
+  padding-right: 12px;
+}
+
 th {
   position: sticky;
   top: 0;
@@ -307,10 +349,16 @@ th {
 .entity-name {
   display: grid;
   gap: 2px;
+  min-width: 0;
 }
 
 .entity-name strong {
   font-size: 13px;
+}
+
+.entity-name strong,
+.entity-name span {
+  overflow-wrap: anywhere;
 }
 
 .entity-name span,

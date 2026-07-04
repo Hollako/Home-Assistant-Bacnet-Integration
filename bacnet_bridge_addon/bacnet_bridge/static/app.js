@@ -155,6 +155,7 @@ function renderMappings() {
               >
               <button class="secondary" type="button" data-save-instance="${escapeHtml(mapping.id)}">Save</button>
             </span>
+            <span class="field-error" data-instance-error="${escapeHtml(mapping.id)}"></span>
           </div>
         </td>
         <td>
@@ -242,9 +243,17 @@ document.addEventListener("click", (event) => {
     const input = save.closest("tr")?.querySelector("[data-instance-edit]");
     const instance = normalizeInstance(input?.value);
     if (instance === undefined) {
+      markInstanceInvalid(input, "Object instance must be a whole number between 0 and 4194302");
       return;
     }
-    updateMappingInstance(save.dataset.saveInstance, instance).catch(showError);
+    const conflict = findInstanceConflict(save.dataset.saveInstance, instance);
+    if (conflict) {
+      markInstanceInvalid(input, `${conflict.object_type}-${instance} is already used by ${conflict.entity_id}`);
+      return;
+    }
+    clearInstanceInvalid(input);
+    updateMappingInstance(save.dataset.saveInstance, instance)
+      .catch((error) => markInstanceInvalid(input, error.message));
     return;
   }
   const del = event.target.closest("[data-delete]");
@@ -253,8 +262,50 @@ document.addEventListener("click", (event) => {
   }
 });
 
+document.addEventListener("input", (event) => {
+  const input = event.target.closest("[data-instance-edit]");
+  if (input) {
+    clearInstanceInvalid(input);
+  }
+});
+
 function showError(error) {
   els.subtitle.textContent = error.message;
+}
+
+function findInstanceConflict(mappingId, instance) {
+  if (instance === null) {
+    return null;
+  }
+  const current = state.mappings.find((mapping) => mapping.id === mappingId);
+  if (!current) {
+    return null;
+  }
+  return state.mappings.find((mapping) => (
+    mapping.enabled
+    && mapping.id !== mappingId
+    && mapping.object_type === current.object_type
+    && Number(mapping.instance) === instance
+  ));
+}
+
+function markInstanceInvalid(input, message) {
+  input?.classList.add("is-invalid");
+  const error = input?.closest("tr")?.querySelector("[data-instance-error]");
+  if (error) {
+    error.textContent = message;
+    error.classList.add("is-visible");
+  }
+  showError(new Error(message));
+}
+
+function clearInstanceInvalid(input) {
+  input?.classList.remove("is-invalid");
+  const error = input?.closest("tr")?.querySelector("[data-instance-error]");
+  if (error) {
+    error.textContent = "";
+    error.classList.remove("is-visible");
+  }
 }
 
 function normalizeInstance(value) {
