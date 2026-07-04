@@ -59,6 +59,19 @@ body {
   margin-bottom: 16px;
 }
 
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.brand-logo {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+}
+
 h1,
 h2,
 p {
@@ -285,6 +298,10 @@ tr.is-published td {
   .toolbar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .brand {
+    align-items: flex-start;
   }
 
   .status-grid,

@@ -11,7 +11,7 @@ from typing import Any, Dict, Iterable, Optional
 from aiohttp import web
 
 from .bacnet_device import BACnetBridgeDevice
-from .config import AddonConfig
+from .config import AddonConfig, validate_bind_address_on_host
 from .ha_client import HomeAssistantClient
 from .store import MappingStore
 from .web import BridgeWeb
@@ -52,6 +52,17 @@ async def async_main() -> None:
     token = os.getenv("SUPERVISOR_TOKEN") or os.getenv("HA_TOKEN")
     if not token:
         raise RuntimeError("SUPERVISOR_TOKEN is not available. Enable homeassistant_api in config.yaml.")
+
+    try:
+        host_address = validate_bind_address_on_host(config.bind_address)
+    except ValueError as err:
+        LOGGER.error("configuration_error %s", err)
+        raise
+    LOGGER.info(
+        "bind_address_validated bind_address=%s interface=%s",
+        host_address.address,
+        host_address.interface_name,
+    )
 
     store = MappingStore(args.store, config)
     store.load()
