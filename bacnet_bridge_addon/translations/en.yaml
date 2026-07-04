@@ -1,0 +1,43 @@
+configuration:
+  device_instance:
+    name: Device instance
+    description: BACnet device instance exposed by the bridge.
+  device_name:
+    name: Device name
+    description: BACnet device name exposed to the BMS.
+  bind_address:
+    name: Bind address
+    description: BACnet/IP address and subnet on the BACnet VLAN.
+  log_level:
+    name: Log level
+    description: Bridge log verbosity.
+  enable_writeback:
+    name: Enable write-back
+    description: Allow supported BACnet writes to call Home Assistant services.
+  watch_interval_seconds:
+    name: Write watch interval
+    description: How often writable BACnet objects are checked for external writes.
+  ha_reconnect_seconds:
+    name: Home Assistant reconnect delay
+    description: Delay before reconnecting the Home Assistant event stream.
+  ai_start:
+    name: Analog Input start
+    description: First auto-assigned Analog Input object instance.
+  ao_start:
+    name: Analog Output start
+    description: First auto-assigned Analog Output object instance.
+  av_start:
+    name: Analog Value start
+    description: First auto-assigned Analog Value object instance.
+  bi_start:
+    name: Binary Input start
+    description: First auto-assigned Binary Input object instance.
+  bo_start:
+    name: Binary Output start
+    description: First auto-assigned Binary Output object instance.
+  bv_start:
+    name: Binary Value start
+    description: First auto-assigned Binary Value object instance.
+  msv_start:
+    name: Multi-state Value start
+    description: First auto-assigned Multi-state Value object instance.

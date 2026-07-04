@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+logs/
+bacnet_points.json
+.DS_Store
+Thumbs.db
+.venv/
+venv/
+
+# Local workspace notes and legacy migration material.
+.agents/
+PROJECT_MEMORY.md
+START_NEW_LOCATION_PROMPT.md
+Legacy_BACpypes/
+custom_component/

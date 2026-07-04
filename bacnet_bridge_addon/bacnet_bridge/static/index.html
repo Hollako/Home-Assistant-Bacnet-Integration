@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BACnet Bridge</title>
+    <link rel="stylesheet" href="static/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <h1>BACnet Bridge</h1>
+          <p id="subtitle">Loading bridge status...</p>
+        </div>
+        <button id="refreshBtn" type="button">Refresh</button>
+      </header>
+
+      <section class="status-grid" aria-label="Status">
+        <div class="metric">
+          <span>HA</span>
+          <strong id="haStatus">...</strong>
+        </div>
+        <div class="metric">
+          <span>BACnet Device</span>
+          <strong id="deviceInstance">...</strong>
+        </div>
+        <div class="metric">
+          <span>Enabled</span>
+          <strong id="enabledMappings">0</strong>
+        </div>
+        <div class="metric">
+          <span>Objects</span>
+          <strong id="objectCount">0</strong>
+        </div>
+      </section>
+
+      <section class="toolbar">
+        <input id="searchInput" type="search" placeholder="Search entities">
+        <select id="typeFilter" aria-label="Object type">
+          <option value="">Auto type</option>
+          <option value="AV">Analog Value</option>
+          <option value="BV">Binary Value</option>
+          <option value="BO">Binary Output</option>
+          <option value="AO">Analog Output</option>
+          <option value="AI">Analog Input</option>
+          <option value="BI">Binary Input</option>
+          <option value="MSV">Multi-state Value</option>
+        </select>
+      </section>
+
+      <section class="layout">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Home Assistant Entities</h2>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Entity</th>
+                  <th>State</th>
+                  <th>Suggested</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="entityRows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>BACnet Mappings</h2>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Object</th>
+                  <th>Entity</th>
+                  <th>Last</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="mappingRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="static/app.js"></script>
+  </body>
+</html>
