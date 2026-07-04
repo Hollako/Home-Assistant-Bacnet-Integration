@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+- Set the entity and mapping panels to an even 50/50 split.
+
 ## 0.3.0
 
 - Add HVAC climate point discovery for current temperature, target temperature, HVAC mode, fan mode, swing mode, and preset mode where Home Assistant exposes them.
