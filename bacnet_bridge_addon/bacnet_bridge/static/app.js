@@ -88,6 +88,21 @@ function renderEntities() {
           <td><span class="tag ${mapped ? "published" : ""}">${escapeHtml(objectLabel)}</span></td>
           <td>
             ${mapped ? `
+              <span class="instance-text">${escapeHtml(mapped.instance)}</span>
+            ` : `
+              <input
+                class="instance-input"
+                type="number"
+                min="0"
+                max="4194302"
+                inputmode="numeric"
+                placeholder="Auto"
+                aria-label="BACnet object instance"
+              >
+            `}
+          </td>
+          <td>
+            ${mapped ? `
               <button
                 class="unpublish"
                 type="button"
@@ -115,7 +130,7 @@ function renderEntities() {
         </tr>
       `;
     });
-  els.entityRows.innerHTML = rows.join("") || `<tr><td colspan="4" class="muted">No entities found</td></tr>`;
+  els.entityRows.innerHTML = rows.join("") || `<tr><td colspan="5" class="muted">No entities found</td></tr>`;
 }
 
 function renderMappings() {
@@ -127,6 +142,19 @@ function renderMappings() {
           <div class="entity-name">
             <strong>${mapping.object_type}-${mapping.instance}</strong>
             <span>${escapeHtml(mapping.object_name || "")}</span>
+            <span class="object-edit">
+              <input
+                class="instance-input"
+                type="number"
+                min="0"
+                max="4194302"
+                inputmode="numeric"
+                value="${escapeHtml(mapping.instance)}"
+                aria-label="BACnet object instance for ${escapeHtml(mapping.object_type)}"
+                data-instance-edit="${escapeHtml(mapping.id)}"
+              >
+              <button class="secondary" type="button" data-save-instance="${escapeHtml(mapping.id)}">Save</button>
+            </span>
           </div>
         </td>
         <td>
@@ -152,6 +180,7 @@ async function addMapping(entityId, objectType, point) {
     body: JSON.stringify({
       entity_id: entityId,
       object_type: objectType || null,
+      instance: point.instance ?? null,
       source: point.source || "state",
       attribute: point.attribute || null,
       transform: point.transform || null,
@@ -159,6 +188,14 @@ async function addMapping(entityId, objectType, point) {
       units: point.unit || null,
       writable: point.writable,
     }),
+  });
+  await refresh();
+}
+
+async function updateMappingInstance(mappingId, instance) {
+  await api(`api/mappings/${mappingId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ instance }),
   });
   await refresh();
 }
@@ -184,7 +221,13 @@ els.typeFilter.addEventListener("change", renderEntities);
 document.addEventListener("click", (event) => {
   const add = event.target.closest("[data-add]");
   if (add) {
+    const instanceInput = add.closest("tr")?.querySelector(".instance-input");
+    const instance = normalizeInstance(instanceInput?.value);
+    if (instance === undefined) {
+      return;
+    }
     addMapping(add.dataset.add, add.dataset.type, {
+      instance,
       source: add.dataset.source,
       attribute: add.dataset.attribute,
       transform: add.dataset.transform,
@@ -192,6 +235,16 @@ document.addEventListener("click", (event) => {
       unit: add.dataset.unit,
       writable: add.dataset.writable === "true",
     }).catch(showError);
+    return;
+  }
+  const save = event.target.closest("[data-save-instance]");
+  if (save) {
+    const input = save.closest("tr")?.querySelector("[data-instance-edit]");
+    const instance = normalizeInstance(input?.value);
+    if (instance === undefined) {
+      return;
+    }
+    updateMappingInstance(save.dataset.saveInstance, instance).catch(showError);
     return;
   }
   const del = event.target.closest("[data-delete]");
@@ -202,6 +255,19 @@ document.addEventListener("click", (event) => {
 
 function showError(error) {
   els.subtitle.textContent = error.message;
+}
+
+function normalizeInstance(value) {
+  const text = String(value || "").trim();
+  if (!text) {
+    return null;
+  }
+  const instance = Number(text);
+  if (!Number.isInteger(instance) || instance < 0 || instance > 4194302) {
+    showError(new Error("Object instance must be a whole number between 0 and 4194302"));
+    return undefined;
+  }
+  return instance;
 }
 
 function flatPoints() {

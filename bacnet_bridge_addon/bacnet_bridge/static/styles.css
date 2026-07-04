@@ -120,6 +120,10 @@ button.danger {
   color: var(--danger);
 }
 
+button.secondary {
+  min-width: 58px;
+}
+
 button.unpublish {
   min-width: 98px;
   border-color: rgba(161, 60, 60, 0.55);
@@ -130,6 +134,22 @@ button.unpublish {
 input,
 select {
   padding: 0 10px;
+}
+
+.instance-input {
+  width: 96px;
+}
+
+.instance-text {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.object-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
 }
 
 .status-grid {
@@ -201,7 +221,7 @@ table {
 
 .layout .panel:first-child table {
   table-layout: fixed;
-  min-width: 760px;
+  min-width: 880px;
   padding-right: 24px;
 }
 
@@ -217,11 +237,16 @@ table {
 
 .layout .panel:first-child th:nth-child(3),
 .layout .panel:first-child td:nth-child(3) {
-  width: 14%;
+  width: 12%;
 }
 
 .layout .panel:first-child th:nth-child(4),
 .layout .panel:first-child td:nth-child(4) {
+  width: 118px;
+}
+
+.layout .panel:first-child th:nth-child(5),
+.layout .panel:first-child td:nth-child(5) {
   width: 142px;
 }
 

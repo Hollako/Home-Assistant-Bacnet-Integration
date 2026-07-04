@@ -77,6 +77,9 @@ class MappingStore:
                 return mapping
         return None
 
+    def get_mapping(self, mapping_id: str) -> Dict[str, Any]:
+        return self._find(mapping_id)
+
     def add_mapping(
         self,
         entity_state: Dict[str, Any],
@@ -141,6 +144,30 @@ class MappingStore:
         mapping["enabled"] = False
         mapping["deleted_at"] = int(time.time())
         mapping["updated_at"] = int(time.time())
+        self._sync_counter(mapping["object_type"])
+        self.save()
+        return mapping
+
+    def update_mapping_instance(self, mapping_id: str, instance: int) -> Dict[str, Any]:
+        mapping = self._find(mapping_id)
+        if not mapping.get("enabled", True):
+            raise ValueError("Disabled mappings cannot be edited")
+
+        object_type = str(mapping["object_type"]).upper()
+        resolved_instance = int(instance)
+        _validate_object_instance(resolved_instance)
+
+        current_instance = int(mapping["instance"])
+        if resolved_instance == current_instance:
+            return mapping
+
+        used = _used_instances(self.enabled_mappings(), object_type, exclude_mapping_id=mapping_id)
+        if resolved_instance in used:
+            raise ValueError(f"{object_type} {resolved_instance} is already in use")
+
+        mapping["instance"] = resolved_instance
+        mapping["updated_at"] = int(time.time())
+        self._sync_counter(object_type)
         self.save()
         return mapping
 
@@ -164,24 +191,28 @@ class MappingStore:
         raise KeyError(f"Mapping not found: {mapping_id}")
 
     def _reserve_instance(self, object_type: str, requested: Optional[int]) -> int:
-        used = _used_instances(self.data.get("mappings", []), object_type)
-        counters = self.data.setdefault("counters", {})
+        used = _used_instances(self.enabled_mappings(), object_type)
         start = self.config.instance_starts[object_type]
 
         if requested is not None:
             instance = int(requested)
             _validate_object_instance(instance)
             if instance in used:
-                raise ValueError(f"{object_type} {instance} is already reserved")
-            counters[object_type] = max(int(counters.get(object_type, start)), instance + 1)
+                raise ValueError(f"{object_type} {instance} is already in use")
+            self._sync_counter(object_type, used | {instance})
             return instance
 
-        instance = max(int(counters.get(object_type, start)), start)
-        while instance in used:
-            instance += 1
-            _validate_object_instance(instance)
-        counters[object_type] = instance + 1
+        instance = _next_available_instance(start, used)
+        self._sync_counter(object_type, used | {instance})
         return instance
+
+    def _sync_counter(self, object_type: str, used: Optional[set[int]] = None) -> None:
+        if used is None:
+            used = _used_instances(self.enabled_mappings(), object_type)
+        self.data.setdefault("counters", {})[object_type] = _next_available_instance(
+            self.config.instance_starts[object_type],
+            used,
+        )
 
 
 def suggest_object_type(
@@ -304,12 +335,26 @@ def point_options(entity_state: Dict[str, Any]) -> List[Dict[str, Any]]:
     return points
 
 
-def _used_instances(mappings: Iterable[Dict[str, Any]], object_type: str) -> set[int]:
+def _used_instances(
+    mappings: Iterable[Dict[str, Any]],
+    object_type: str,
+    *,
+    exclude_mapping_id: Optional[str] = None,
+) -> set[int]:
     return {
         int(mapping["instance"])
         for mapping in mappings
         if mapping.get("object_type") == object_type and "instance" in mapping
+        and mapping.get("id") != exclude_mapping_id
     }
+
+
+def _next_available_instance(start: int, used: set[int]) -> int:
+    instance = start
+    while instance in used:
+        instance += 1
+        _validate_object_instance(instance)
+    return instance
 
 
 def _default_object_name(entity_state: Dict[str, Any], point_label: Optional[str] = None) -> str:

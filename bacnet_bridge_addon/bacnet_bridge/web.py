@@ -22,6 +22,7 @@ class BridgeWeb:
                 web.get("/api/entities", self.entities),
                 web.get("/api/mappings", self.mappings),
                 web.post("/api/mappings", self.add_mapping),
+                web.patch("/api/mappings/{mapping_id}", self.update_mapping),
                 web.delete("/api/mappings/{mapping_id}", self.disable_mapping),
             ]
         )
@@ -54,10 +55,13 @@ class BridgeWeb:
             state = await self.context.ha.get_state(entity_id)
             if state is None:
                 raise web.HTTPNotFound(reason=f"Entity not found: {entity_id}")
+            requested_instance = payload.get("instance")
+            if requested_instance == "":
+                requested_instance = None
             mapping = self.context.store.add_mapping(
                 state,
                 object_type=payload.get("object_type") or None,
-                instance=payload.get("instance") or None,
+                instance=requested_instance,
                 object_name=payload.get("object_name") or None,
                 units=payload.get("units") or None,
                 writable=payload.get("writable"),
@@ -83,3 +87,27 @@ class BridgeWeb:
             return web.json_response({"mapping": mapping})
         except KeyError as err:
             return web.json_response({"error": str(err)}, status=404)
+
+    async def update_mapping(self, request: web.Request) -> web.Response:
+        mapping_id = request.match_info["mapping_id"]
+        try:
+            payload: Dict[str, Any] = await request.json()
+            instance = payload.get("instance")
+            if instance is None or str(instance).strip() == "":
+                raise ValueError("instance is required")
+
+            previous = dict(self.context.store.get_mapping(mapping_id))
+            mapping = self.context.store.update_mapping_instance(mapping_id, int(instance))
+            if int(previous["instance"]) != int(mapping["instance"]):
+                self.context.bacnet.remove_mapping(previous)
+                self.context.bacnet.ensure_mapping(mapping)
+
+            state = await self.context.ha.get_state(mapping["entity_id"])
+            if state is not None:
+                value = self.context.bacnet.update_from_ha_state(mapping, state)
+                self.context.store.update_mapping_status(mapping["id"], last_state=value, last_error=None)
+            return web.json_response({"mapping": mapping})
+        except KeyError as err:
+            return web.json_response({"error": str(err)}, status=404)
+        except Exception as err:
+            return web.json_response({"error": str(err)}, status=400)
