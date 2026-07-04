@@ -1,6 +1,6 @@
 # Home Assistant BACnet Bridge
 
-Publish selected Home Assistant entities as BACnet/IP objects directly from Home Assistant.
+A direct Home Assistant BACnet bridge that publishes selected Home Assistant entities as BACnet/IP objects.
 
 This repository is a Home Assistant App repository. The bridge runs as a Home Assistant App, opens through the Home Assistant sidebar, and lets you choose which entities become BACnet objects.
 
