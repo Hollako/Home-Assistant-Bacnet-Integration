@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2
+
+- Test release to verify App Store update detection.
+
 ## 0.3.1
 
 - Set the entity and mapping panels to an even 50/50 split.
