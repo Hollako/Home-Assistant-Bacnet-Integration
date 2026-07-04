@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- Add HVAC climate point discovery for current temperature, target temperature, HVAC mode, fan mode, swing mode, and preset mode where Home Assistant exposes them.
+- Add climate writeback for target temperature and writable mode points.
+- Keep command and status points distinct when they use the same Home Assistant entity.
+
 ## 0.2.8
 
 - Give the BACnet Mappings panel more room and reduce horizontal scrolling.

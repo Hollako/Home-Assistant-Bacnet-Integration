@@ -157,6 +157,9 @@ def service_call_for_write(mapping: Dict[str, Any], value: Any) -> tuple[str, st
             return "light", "turn_off", {"entity_id": entity_id}
         return "light", "turn_on", {"entity_id": entity_id, "brightness_pct": int(round(brightness_pct))}
 
+    if domain == "climate" and object_type in {"AO", "AV"} and source == "attribute" and attribute == "temperature":
+        return "climate", "set_temperature", {"entity_id": entity_id, "temperature": float(value)}
+
     if object_type in {"BO", "BV"}:
         on = bool(value)
         if domain in {"switch", "light", "input_boolean", "fan"}:
@@ -172,8 +175,18 @@ def service_call_for_write(mapping: Dict[str, Any], value: Any) -> tuple[str, st
         index = int(value) - 1
         if not 0 <= index < len(states):
             raise ValueError(f"MSV value {value} is outside mapped states")
+        selected = states[index]
+        if domain == "climate":
+            if source == "state":
+                return "climate", "set_hvac_mode", {"entity_id": entity_id, "hvac_mode": selected}
+            if attribute == "fan_mode":
+                return "climate", "set_fan_mode", {"entity_id": entity_id, "fan_mode": selected}
+            if attribute == "swing_mode":
+                return "climate", "set_swing_mode", {"entity_id": entity_id, "swing_mode": selected}
+            if attribute == "preset_mode":
+                return "climate", "set_preset_mode", {"entity_id": entity_id, "preset_mode": selected}
         if domain in {"select", "input_select"}:
-            return domain, "select_option", {"entity_id": entity_id, "option": states[index]}
+            return domain, "select_option", {"entity_id": entity_id, "option": selected}
 
     raise ValueError(f"Write-back is not supported for {entity_id} as {object_type}")
 

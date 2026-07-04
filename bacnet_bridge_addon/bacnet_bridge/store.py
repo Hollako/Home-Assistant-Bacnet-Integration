@@ -14,7 +14,7 @@ from .config import OBJECT_TYPES, AddonConfig
 BINARY_DOMAINS = {"binary_sensor", "input_boolean", "switch", "light", "fan", "cover", "lock", "automation"}
 NUMERIC_DOMAINS = {"sensor", "number", "input_number", "counter"}
 STATE_DOMAINS = {"select", "input_select", "media_player", "climate", "alarm_control_panel"}
-WRITABLE_DOMAINS = {"input_boolean", "switch", "light", "fan", "cover", "lock", "number", "input_number", "select", "input_select"}
+WRITABLE_DOMAINS = {"input_boolean", "switch", "light", "fan", "cover", "lock", "number", "input_number", "select", "input_select", "climate"}
 
 
 class MappingStore:
@@ -107,9 +107,9 @@ class MappingStore:
             if (
                 existing.get("entity_id") == entity_id
                 and existing.get("object_type") == object_type
-                and _mapping_source_key(existing) == _source_key(source, attribute)
+                and _mapping_source_key(existing) == _source_key(source, attribute, transform)
             ):
-                raise ValueError(f"{entity_id} {_source_key(source, attribute)} is already published as {object_type}")
+                raise ValueError(f"{entity_id} {_source_key(source, attribute, transform)} is already published as {object_type}")
 
         resolved_instance = self._reserve_instance(object_type, instance)
         now = int(time.time())
@@ -129,7 +129,7 @@ class MappingStore:
             "units": resolved_units,
             "writable": bool(writable) if writable is not None else _default_writable(entity_state, object_type, source, attribute),
             "enabled": True,
-            "states": states or _default_states(entity_state, object_type),
+            "states": states or _default_states(entity_state, object_type, source, attribute, transform),
             "created_at": now,
             "updated_at": now,
             "last_state": None,
@@ -301,6 +301,27 @@ def point_options(entity_state: Dict[str, Any]) -> List[Dict[str, Any]]:
         add("value_status", "Value Status", "AI", unit=_state_unit(entity_state), allowed_object_types=["AI", "AV"])
     elif domain in NUMERIC_DOMAINS and _looks_numeric(entity_state.get("state")):
         add("value_status", "Value Status", "AI", unit=_state_unit(entity_state), allowed_object_types=["AI", "AV"])
+    elif domain == "climate":
+        temperature_unit = attributes.get("temperature_unit") or _state_unit(entity_state)
+        if _looks_numeric(attributes.get("current_temperature")):
+            add("current_temperature", "Current Temperature", "AI", source="attribute", attribute="current_temperature", unit=temperature_unit, value=attributes.get("current_temperature"), allowed_object_types=["AI", "AV"])
+        if _looks_numeric(attributes.get("temperature")):
+            add("target_temperature_command", "Target Temperature Command", "AO", source="attribute", attribute="temperature", transform="climate_temperature_command", writable=True, unit=temperature_unit, value=attributes.get("temperature"), allowed_object_types=["AO", "AV"])
+            add("target_temperature_status", "Target Temperature Status", "AI", source="attribute", attribute="temperature", transform="climate_temperature_status", unit=temperature_unit, value=attributes.get("temperature"), allowed_object_types=["AI", "AV"])
+        if _state_list(attributes.get("hvac_modes")):
+            add("hvac_mode_command", "HVAC Mode Command", "MSV", transform="hvac_mode_command", writable=True)
+            add("hvac_mode_status", "HVAC Mode Status", "MSV", transform="hvac_mode_status")
+        if _state_list(attributes.get("fan_modes")) and attributes.get("fan_mode"):
+            add("fan_mode_command", "Fan Mode Command", "MSV", source="attribute", attribute="fan_mode", transform="fan_mode_command", writable=True, value=attributes.get("fan_mode"))
+            add("fan_mode_status", "Fan Mode Status", "MSV", source="attribute", attribute="fan_mode", transform="fan_mode_status", value=attributes.get("fan_mode"))
+        if _state_list(attributes.get("swing_modes")) and attributes.get("swing_mode"):
+            add("swing_mode_command", "Swing Mode Command", "MSV", source="attribute", attribute="swing_mode", transform="swing_mode_command", writable=True, value=attributes.get("swing_mode"))
+            add("swing_mode_status", "Swing Mode Status", "MSV", source="attribute", attribute="swing_mode", transform="swing_mode_status", value=attributes.get("swing_mode"))
+        if _state_list(attributes.get("preset_modes")) and attributes.get("preset_mode"):
+            add("preset_mode_command", "Preset Mode Command", "MSV", source="attribute", attribute="preset_mode", transform="preset_mode_command", writable=True, value=attributes.get("preset_mode"))
+            add("preset_mode_status", "Preset Mode Status", "MSV", source="attribute", attribute="preset_mode", transform="preset_mode_status", value=attributes.get("preset_mode"))
+        if not points:
+            add("state_value", "State Value", "MSV")
     elif domain in STATE_DOMAINS:
         add("state_value", "State Value", "MSV")
     else:
@@ -380,6 +401,10 @@ def _default_units(
 ) -> Optional[str]:
     if source == "attribute" and (attribute == "brightness" or transform == "brightness_pct"):
         return "%"
+    if source == "attribute" and attribute in {"current_temperature", "temperature"}:
+        attributes = entity_state.get("attributes") or {}
+        unit = attributes.get("temperature_unit") or attributes.get("unit_of_measurement")
+        return str(unit) if unit else None
     return _state_unit(entity_state)
 
 
@@ -387,14 +412,36 @@ def _default_writable(entity_state: Dict[str, Any], object_type: str, source: st
     entity_id = str(entity_state.get("entity_id", ""))
     domain = entity_id.split(".", 1)[0]
     if source == "attribute":
+        if domain == "climate" and attribute == "temperature":
+            return object_type in {"AO", "AV"}
+        if domain == "climate" and attribute in {"fan_mode", "swing_mode", "preset_mode"}:
+            return object_type == "MSV"
         return domain == "light" and attribute == "brightness" and object_type in {"AO", "AV"}
+    if domain == "climate":
+        return object_type == "MSV" and transform == "hvac_mode_command"
     return domain in WRITABLE_DOMAINS and object_type in {"AO", "AV", "BO", "BV", "MSV"}
 
 
-def _default_states(entity_state: Dict[str, Any], object_type: str) -> Optional[List[str]]:
+def _default_states(
+    entity_state: Dict[str, Any],
+    object_type: str,
+    source: str,
+    attribute: Optional[str],
+    transform: Optional[str],
+) -> Optional[List[str]]:
     if object_type != "MSV":
         return None
     attributes = entity_state.get("attributes") or {}
+    domain = str(entity_state.get("entity_id", "")).split(".", 1)[0]
+    if domain == "climate":
+        if source == "state" and transform in {"hvac_mode_command", "hvac_mode_status"}:
+            return _state_list(attributes.get("hvac_modes")) or ["off"]
+        if attribute == "fan_mode":
+            return _state_list(attributes.get("fan_modes")) or ["auto"]
+        if attribute == "swing_mode":
+            return _state_list(attributes.get("swing_modes")) or ["off"]
+        if attribute == "preset_mode":
+            return _state_list(attributes.get("preset_modes")) or ["none"]
     options = attributes.get("options")
     if isinstance(options, list) and options:
         return [str(option)[:64] for option in options]
@@ -420,12 +467,17 @@ def _normalize_source(source: Optional[str], attribute: Optional[str]) -> str:
     return "attribute" if attribute else "state"
 
 
-def _source_key(source: str, attribute: Optional[str]) -> str:
-    return f"attribute:{attribute}" if source == "attribute" else "state"
+def _source_key(source: str, attribute: Optional[str], transform: Optional[str] = None) -> str:
+    base = f"attribute:{attribute}" if source == "attribute" else "state"
+    return f"{base}:{transform}" if transform else base
 
 
 def _mapping_source_key(mapping: Dict[str, Any]) -> str:
-    return _source_key(_normalize_source(mapping.get("source"), mapping.get("attribute")), mapping.get("attribute"))
+    return _source_key(
+        _normalize_source(mapping.get("source"), mapping.get("attribute")),
+        mapping.get("attribute"),
+        mapping.get("transform"),
+    )
 
 
 def _default_point_label(source: str, attribute: Optional[str]) -> str:
@@ -442,6 +494,12 @@ def _supports_brightness(entity_state: Dict[str, Any]) -> bool:
     if isinstance(supported_color_modes, list):
         return any(mode not in {"onoff", "unknown"} for mode in supported_color_modes)
     return False
+
+
+def _state_list(value: Any) -> Optional[List[str]]:
+    if isinstance(value, list) and value:
+        return [str(item)[:64] for item in value]
+    return None
 
 
 def _brightness_to_percent(raw_brightness: Any, raw_state: Any = None) -> Optional[float]:

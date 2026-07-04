@@ -339,7 +339,8 @@ function flatPoints() {
 
 function sourceKey(item) {
   const source = item.source || "state";
-  return source === "attribute" ? `attribute:${item.attribute || ""}` : "state";
+  const base = source === "attribute" ? `attribute:${item.attribute || ""}` : "state";
+  return item.transform ? `${base}:${item.transform}` : base;
 }
 
 function mappingKey(entityId, objectType, item) {
