@@ -103,6 +103,7 @@ function renderEntities() {
                 placeholder="Auto"
                 aria-label="BACnet object instance"
               >
+              <span class="field-error" data-instance-error></span>
             `}
           </td>
           <td>
@@ -317,8 +318,15 @@ document.addEventListener("click", (event) => {
     const instanceInput = add.closest("tr")?.querySelector(".instance-input");
     const instance = normalizeInstance(instanceInput?.value);
     if (instance === undefined) {
+      markInstanceInvalid(instanceInput, "Object instance must be a whole number between 0 and 4194302");
       return;
     }
+    const conflict = findInstanceConflictByType(add.dataset.type, instance);
+    if (conflict) {
+      markInstanceInvalid(instanceInput, `${conflict.object_type}-${instance} is already used by ${conflict.entity_id}`);
+      return;
+    }
+    clearInstanceInvalid(instanceInput);
     addMapping(add.dataset.add, add.dataset.type, {
       instance,
       source: add.dataset.source,
@@ -327,7 +335,7 @@ document.addEventListener("click", (event) => {
       label: add.dataset.label,
       unit: add.dataset.unit,
       writable: add.dataset.writable === "true",
-    }).catch(showError);
+    }).catch((error) => markInstanceInvalid(instanceInput, error.message));
     return;
   }
   const save = event.target.closest("[data-save-instance]");
@@ -355,7 +363,7 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("input", (event) => {
-  const input = event.target.closest("[data-instance-edit]");
+  const input = event.target.closest(".instance-input");
   if (input) {
     clearInstanceInvalid(input);
   }
@@ -373,10 +381,17 @@ function findInstanceConflict(mappingId, instance) {
   if (!current) {
     return null;
   }
+  return findInstanceConflictByType(current.object_type, instance, mappingId);
+}
+
+function findInstanceConflictByType(objectType, instance, excludeMappingId = null) {
+  if (instance === null) {
+    return null;
+  }
   return state.mappings.find((mapping) => (
     mapping.enabled
-    && mapping.id !== mappingId
-    && mapping.object_type === current.object_type
+    && mapping.id !== excludeMappingId
+    && mapping.object_type === objectType
     && Number(mapping.instance) === instance
   ));
 }

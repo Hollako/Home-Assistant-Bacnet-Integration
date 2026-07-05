@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.8
+
+- Show inline validation when publishing an entity with a duplicate BACnet object instance.
+
 ## 0.3.7
 
 - Disable caching for the web UI shell and add versioned frontend asset URLs.

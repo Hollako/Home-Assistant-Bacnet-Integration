@@ -142,6 +142,11 @@ class BACnetBridgeDevice:
         self.metrics["ha_updates"] += 1
         return value
 
+    def update_object_name(self, mapping: Dict[str, Any]) -> None:
+        self.ensure_mapping(mapping)
+        obj = self._object_for_type(mapping["object_type"], int(mapping["instance"]))
+        obj.objectName = CharacterString(str(mapping["object_name"]))
+
     async def watch_writable(
         self,
         mapping_lookup: Callable[[str, int], Optional[Dict[str, Any]]],

@@ -108,15 +108,26 @@ class BridgeWeb:
         mapping_id = request.match_info["mapping_id"]
         try:
             payload: Dict[str, Any] = await request.json()
-            instance = payload.get("instance")
-            if instance is None or str(instance).strip() == "":
-                raise ValueError("instance is required")
+            if "instance" not in payload and "object_name" not in payload:
+                raise ValueError("No mapping changes provided")
 
             previous = dict(self.context.store.get_mapping(mapping_id))
-            mapping = self.context.store.update_mapping_instance(mapping_id, int(instance))
+            mapping = previous
+
+            if "object_name" in payload:
+                mapping = self.context.store.update_mapping_object_name(mapping_id, str(payload.get("object_name") or ""))
+
+            if "instance" in payload:
+                instance = payload.get("instance")
+                if instance is None or str(instance).strip() == "":
+                    raise ValueError("instance is required")
+                mapping = self.context.store.update_mapping_instance(mapping_id, int(instance))
+
             if int(previous["instance"]) != int(mapping["instance"]):
                 self.context.bacnet.remove_mapping(previous)
                 self.context.bacnet.ensure_mapping(mapping)
+            elif previous.get("object_name") != mapping.get("object_name"):
+                self.context.bacnet.update_object_name(mapping)
 
             state = await self.context.ha.get_state(mapping["entity_id"])
             if state is not None:

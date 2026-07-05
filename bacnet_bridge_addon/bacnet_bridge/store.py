@@ -171,6 +171,20 @@ class MappingStore:
         self.save()
         return mapping
 
+    def update_mapping_object_name(self, mapping_id: str, object_name: str) -> Dict[str, Any]:
+        mapping = self._find(mapping_id)
+        if not mapping.get("enabled", True):
+            raise ValueError("Disabled mappings cannot be edited")
+
+        resolved_name = _normalize_object_name(object_name)
+        if mapping.get("object_name") == resolved_name:
+            return mapping
+
+        mapping["object_name"] = resolved_name
+        mapping["updated_at"] = int(time.time())
+        self.save()
+        return mapping
+
     def update_mapping_status(
         self,
         mapping_id: str,
@@ -404,7 +418,14 @@ def _default_object_name(entity_state: Dict[str, Any], point_label: Optional[str
     base = str(friendly or entity_state.get("entity_id", "HA Entity"))
     if point_label:
         base = f"{base} {point_label}"
-    return base[:64]
+    return _normalize_object_name(base)
+
+
+def _normalize_object_name(value: Any) -> str:
+    name = str(value or "").strip()
+    if not name:
+        raise ValueError("BACnet object name is required")
+    return name[:64]
 
 
 def _state_unit(entity_state: Dict[str, Any]) -> Optional[str]:
