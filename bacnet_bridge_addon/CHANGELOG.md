@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.7
+
+- Disable caching for the web UI shell and add versioned frontend asset URLs.
+
 ## 0.3.6
 
 - Add a dedicated domain filter for the Home Assistant entity list.

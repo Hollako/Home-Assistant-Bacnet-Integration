@@ -38,7 +38,11 @@ class BridgeWeb:
         return app
 
     async def index(self, request: web.Request) -> web.FileResponse:
-        return web.FileResponse(Path(__file__).with_name("static") / "index.html")
+        response = web.FileResponse(Path(__file__).with_name("static") / "index.html")
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
 
     async def health(self, request: web.Request) -> web.Response:
         return web.json_response({"status": "ok"})
