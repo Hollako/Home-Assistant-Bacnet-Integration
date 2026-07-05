@@ -153,7 +153,12 @@ select {
   width: 82px;
 }
 
-.instance-input.is-invalid {
+.object-name-input {
+  width: min(280px, 100%);
+}
+
+.instance-input.is-invalid,
+.object-name-input.is-invalid {
   border-color: var(--danger);
   color: var(--danger);
   box-shadow: 0 0 0 1px rgba(161, 60, 60, 0.35);

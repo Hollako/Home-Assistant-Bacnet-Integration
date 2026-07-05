@@ -1,5 +1,5 @@
 name: "BACnet Bridge"
-version: "0.3.8"
+version: "0.3.9"
 slug: "bacnet_bridge"
 description: "Publish selected Home Assistant entities as BACnet/IP objects"
 arch:

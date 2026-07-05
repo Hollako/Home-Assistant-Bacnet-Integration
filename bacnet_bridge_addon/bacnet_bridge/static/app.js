@@ -157,7 +157,18 @@ function renderMappings() {
         <td>
           <div class="entity-name">
             <strong>${mapping.object_type}-${mapping.instance}</strong>
-            <span>${escapeHtml(mapping.object_name || "")}</span>
+            <span class="object-edit">
+              <input
+                class="object-name-input"
+                type="text"
+                maxlength="64"
+                value="${escapeHtml(mapping.object_name || "")}"
+                aria-label="BACnet object name for ${escapeHtml(mapping.object_type)}-${escapeHtml(mapping.instance)}"
+                data-name-edit="${escapeHtml(mapping.id)}"
+              >
+              <button class="secondary" type="button" data-save-name="${escapeHtml(mapping.id)}">Save</button>
+            </span>
+            <span class="field-error" data-name-error="${escapeHtml(mapping.id)}"></span>
             <span class="object-edit">
               <input
                 class="instance-input"
@@ -213,6 +224,14 @@ async function updateMappingInstance(mappingId, instance) {
   await api(`api/mappings/${mappingId}`, {
     method: "PATCH",
     body: JSON.stringify({ instance }),
+  });
+  await refresh();
+}
+
+async function updateMappingObjectName(mappingId, objectName) {
+  await api(`api/mappings/${mappingId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ object_name: objectName }),
   });
   await refresh();
 }
@@ -356,6 +375,19 @@ document.addEventListener("click", (event) => {
       .catch((error) => markInstanceInvalid(input, error.message));
     return;
   }
+  const saveName = event.target.closest("[data-save-name]");
+  if (saveName) {
+    const input = saveName.closest("tr")?.querySelector("[data-name-edit]");
+    const objectName = normalizeObjectName(input?.value);
+    if (objectName === undefined) {
+      markNameInvalid(input, "BACnet object name is required");
+      return;
+    }
+    clearNameInvalid(input);
+    updateMappingObjectName(saveName.dataset.saveName, objectName)
+      .catch((error) => markNameInvalid(input, error.message));
+    return;
+  }
   const del = event.target.closest("[data-delete]");
   if (del) {
     deleteMapping(del.dataset.delete).catch(showError);
@@ -366,6 +398,10 @@ document.addEventListener("input", (event) => {
   const input = event.target.closest(".instance-input");
   if (input) {
     clearInstanceInvalid(input);
+  }
+  const nameInput = event.target.closest(".object-name-input");
+  if (nameInput) {
+    clearNameInvalid(nameInput);
   }
 });
 
@@ -415,6 +451,25 @@ function clearInstanceInvalid(input) {
   }
 }
 
+function markNameInvalid(input, message) {
+  input?.classList.add("is-invalid");
+  const error = input?.closest("tr")?.querySelector("[data-name-error]");
+  if (error) {
+    error.textContent = message;
+    error.classList.add("is-visible");
+  }
+  showError(new Error(message));
+}
+
+function clearNameInvalid(input) {
+  input?.classList.remove("is-invalid");
+  const error = input?.closest("tr")?.querySelector("[data-name-error]");
+  if (error) {
+    error.textContent = "";
+    error.classList.remove("is-visible");
+  }
+}
+
 function normalizeInstance(value) {
   const text = String(value || "").trim();
   if (!text) {
@@ -426,6 +481,11 @@ function normalizeInstance(value) {
     return undefined;
   }
   return instance;
+}
+
+function normalizeObjectName(value) {
+  const text = String(value || "").trim();
+  return text ? text.slice(0, 64) : undefined;
 }
 
 function flatPoints() {

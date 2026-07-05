@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.9
+
+- Allow editing the BACnet object name for published mappings.
+
 ## 0.3.8
 
 - Show inline validation when publishing an entity with a duplicate BACnet object instance.
