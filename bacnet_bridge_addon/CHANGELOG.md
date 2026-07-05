@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.6
+
+- Add a dedicated domain filter for the Home Assistant entity list.
+
 ## 0.3.5
 
 - Broaden entity search to include Home Assistant state attributes and registry metadata.

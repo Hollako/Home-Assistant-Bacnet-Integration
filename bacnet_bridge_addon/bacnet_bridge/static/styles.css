@@ -214,11 +214,17 @@ select {
 }
 
 .toolbar {
+  flex-wrap: wrap;
   margin-bottom: 16px;
 }
 
 .toolbar input {
-  width: min(420px, 100%);
+  flex: 1 1 320px;
+  width: auto;
+}
+
+.toolbar select {
+  flex: 0 0 190px;
 }
 
 .layout {
@@ -406,6 +412,11 @@ tr.is-published td {
   .toolbar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .toolbar select {
+    flex-basis: auto;
+    width: 100%;
   }
 
   .brand {

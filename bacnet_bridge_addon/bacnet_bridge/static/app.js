@@ -14,6 +14,7 @@ const els = {
   mappingRows: document.getElementById("mappingRows"),
   refreshBtn: document.getElementById("refreshBtn"),
   searchInput: document.getElementById("searchInput"),
+  domainFilter: document.getElementById("domainFilter"),
   typeFilter: document.getElementById("typeFilter"),
 };
 
@@ -50,12 +51,14 @@ function render() {
   els.enabledMappings.textContent = status.mappings.enabled;
   els.objectCount.textContent = objectTotals;
   els.subtitle.textContent = `${status.config.device_name} on ${status.config.bind_address}`;
+  renderDomainFilter();
   renderEntities();
   renderMappings();
 }
 
 function renderEntities() {
   const search = parseEntitySearch(els.searchInput.value);
+  const selectedDomain = els.domainFilter.value;
   const forcedType = els.typeFilter.value;
   const mappingByPoint = new Map(
     state.mappings
@@ -65,8 +68,9 @@ function renderEntities() {
   const rows = flatPoints()
     .filter(({ entity, point }) => {
       const allowed = point.allowed_object_types || [point.suggested_object_type || entity.suggested_object_type];
+      const domainAllowed = !selectedDomain || entityDomain(entity) === selectedDomain;
       const typeAllowed = !forcedType || allowed.includes(forcedType);
-      return typeAllowed && entityMatchesSearch(entity, point, search);
+      return domainAllowed && typeAllowed && entityMatchesSearch(entity, point, search);
     })
     .slice(0, 250)
     .map(({ entity, point }) => {
@@ -131,6 +135,17 @@ function renderEntities() {
       `;
     });
   els.entityRows.innerHTML = rows.join("") || `<tr><td colspan="5" class="muted">No entities found</td></tr>`;
+}
+
+function renderDomainFilter() {
+  const selected = els.domainFilter.value;
+  const domains = [...new Set(state.entities.map(entityDomain).filter(Boolean))].sort();
+  const nextSelected = domains.includes(selected) ? selected : "";
+  els.domainFilter.innerHTML = [
+    `<option value="">All domains</option>`,
+    ...domains.map((domain) => `<option value="${escapeHtml(domain)}">${escapeHtml(domainLabel(domain))}</option>`),
+  ].join("");
+  els.domainFilter.value = nextSelected;
 }
 
 function renderMappings() {
@@ -276,6 +291,10 @@ function entityDomain(entity) {
   return String(entity.domain || entity.entity_id || "").split(".", 1)[0].toLowerCase();
 }
 
+function domainLabel(domain) {
+  return domain.replaceAll("_", " ");
+}
+
 function searchTokens(value) {
   return normalizeSearchText(value).split(" ").filter(Boolean);
 }
@@ -289,6 +308,7 @@ function normalizeSearchText(value) {
 
 els.refreshBtn.addEventListener("click", () => refresh().catch(showError));
 els.searchInput.addEventListener("input", renderEntities);
+els.domainFilter.addEventListener("change", renderEntities);
 els.typeFilter.addEventListener("change", renderEntities);
 
 document.addEventListener("click", (event) => {
