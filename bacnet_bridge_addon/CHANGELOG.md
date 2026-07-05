@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3
+
+- Improve entity search with tokenized matching and domain filters.
+
 ## 0.3.2
 
 - Test release to verify App Store update detection.

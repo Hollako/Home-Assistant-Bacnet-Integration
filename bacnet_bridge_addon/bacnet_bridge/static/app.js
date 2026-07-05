@@ -55,7 +55,7 @@ function render() {
 }
 
 function renderEntities() {
-  const query = els.searchInput.value.trim().toLowerCase();
+  const search = parseEntitySearch(els.searchInput.value);
   const forcedType = els.typeFilter.value;
   const mappingByPoint = new Map(
     state.mappings
@@ -64,10 +64,9 @@ function renderEntities() {
   );
   const rows = flatPoints()
     .filter(({ entity, point }) => {
-      const text = `${entity.entity_id} ${entity.name} ${entity.state} ${point.label} ${point.value ?? ""}`.toLowerCase();
       const allowed = point.allowed_object_types || [point.suggested_object_type || entity.suggested_object_type];
       const typeAllowed = !forcedType || allowed.includes(forcedType);
-      return typeAllowed && (!query || text.includes(query));
+      return typeAllowed && entityMatchesSearch(entity, point, search);
     })
     .slice(0, 250)
     .map(({ entity, point }) => {
@@ -213,6 +212,72 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function parseEntitySearch(value) {
+  return String(value || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .reduce((search, part) => {
+      const filter = part.match(/^([a-z_]+):(.*)$/i);
+      if (filter && ["domain", "d"].includes(filter[1].toLowerCase()) && filter[2]) {
+        search.domains.push(normalizeSearchText(filter[2]));
+        return search;
+      }
+      search.tokens.push(...searchTokens(part));
+      return search;
+    }, { domains: [], tokens: [] });
+}
+
+function entityMatchesSearch(entity, point, search) {
+  const domain = normalizeSearchText(entityDomain(entity));
+  if (search.domains.length && !search.domains.some((candidate) => domain.includes(candidate))) {
+    return false;
+  }
+  if (!search.tokens.length) {
+    return true;
+  }
+  const text = entitySearchText(entity, point);
+  return search.tokens.every((token) => text.includes(token));
+}
+
+function entitySearchText(entity, point) {
+  const objectTypes = [
+    point.suggested_object_type,
+    entity.suggested_object_type,
+    ...(point.allowed_object_types || []),
+  ];
+  const raw = [
+    entity.entity_id,
+    entityDomain(entity),
+    entity.name,
+    entity.state,
+    entity.unit,
+    point.label,
+    point.value,
+    point.unit,
+    point.source,
+    point.attribute,
+    point.transform,
+    ...objectTypes,
+  ].filter((value) => value !== null && value !== undefined).join(" ").toLowerCase();
+  return `${raw} ${normalizeSearchText(raw)}`;
+}
+
+function entityDomain(entity) {
+  return String(entity.domain || entity.entity_id || "").split(".", 1)[0].toLowerCase();
+}
+
+function searchTokens(value) {
+  return normalizeSearchText(value).split(" ").filter(Boolean);
+}
+
+function normalizeSearchText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 els.refreshBtn.addEventListener("click", () => refresh().catch(showError));
