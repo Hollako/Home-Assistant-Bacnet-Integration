@@ -155,40 +155,42 @@ function renderMappings() {
     .map((mapping) => `
       <tr>
         <td>
-          <div class="entity-name">
-            <strong>${mapping.object_type}-${mapping.instance}</strong>
-            <span class="object-edit">
-              <input
-                class="object-name-input"
-                type="text"
-                maxlength="64"
-                value="${escapeHtml(mapping.object_name || "")}"
-                aria-label="BACnet object name for ${escapeHtml(mapping.object_type)}-${escapeHtml(mapping.instance)}"
-                data-name-edit="${escapeHtml(mapping.id)}"
-              >
-              <button class="secondary" type="button" data-save-name="${escapeHtml(mapping.id)}">Save</button>
-            </span>
+          <div class="mapping-editor">
+            <div class="mapping-object-row">
+              <strong>${mapping.object_type}-${mapping.instance}</strong>
+              <span class="object-edit object-name-edit">
+                <input
+                  class="object-name-input"
+                  type="text"
+                  maxlength="64"
+                  value="${escapeHtml(mapping.object_name || "")}"
+                  aria-label="BACnet object name for ${escapeHtml(mapping.object_type)}-${escapeHtml(mapping.instance)}"
+                  data-name-edit="${escapeHtml(mapping.id)}"
+                >
+                <button class="secondary" type="button" data-save-name="${escapeHtml(mapping.id)}">Save</button>
+              </span>
+            </div>
             <span class="field-error" data-name-error="${escapeHtml(mapping.id)}"></span>
-            <span class="object-edit">
-              <input
-                class="instance-input"
-                type="number"
-                min="0"
-                max="4194302"
-                inputmode="numeric"
-                value="${escapeHtml(mapping.instance)}"
-                aria-label="BACnet object instance for ${escapeHtml(mapping.object_type)}"
-                data-instance-edit="${escapeHtml(mapping.id)}"
-              >
-              <button class="secondary" type="button" data-save-instance="${escapeHtml(mapping.id)}">Save</button>
-            </span>
+            <div class="mapping-meta-row">
+              <span class="entity-name mapping-entity">
+                <strong>${escapeHtml(mapping.entity_id)}</strong>
+                <span>${escapeHtml(mapping.point_label || sourceLabel(mapping))}</span>
+              </span>
+              <span class="object-edit instance-edit">
+                <input
+                  class="instance-input"
+                  type="number"
+                  min="0"
+                  max="4194302"
+                  inputmode="numeric"
+                  value="${escapeHtml(mapping.instance)}"
+                  aria-label="BACnet object instance for ${escapeHtml(mapping.object_type)}"
+                  data-instance-edit="${escapeHtml(mapping.id)}"
+                >
+                <button class="secondary" type="button" data-save-instance="${escapeHtml(mapping.id)}">Save</button>
+              </span>
+            </div>
             <span class="field-error" data-instance-error="${escapeHtml(mapping.id)}"></span>
-          </div>
-        </td>
-        <td>
-          <div class="entity-name">
-            <strong>${escapeHtml(mapping.entity_id)}</strong>
-            <span>${escapeHtml(mapping.point_label || sourceLabel(mapping))}</span>
           </div>
         </td>
         <td>
@@ -199,7 +201,7 @@ function renderMappings() {
         </td>
       </tr>
     `);
-  els.mappingRows.innerHTML = rows.join("") || `<tr><td colspan="4" class="muted">No mappings yet</td></tr>`;
+  els.mappingRows.innerHTML = rows.join("") || `<tr><td colspan="3" class="muted">No mappings yet</td></tr>`;
 }
 
 async function addMapping(entityId, objectType, point) {
@@ -506,6 +508,9 @@ function flatPoints() {
 
 function sourceKey(item) {
   const source = item.source || "state";
+  if (source === "availability") {
+    return "availability";
+  }
   const base = source === "attribute" ? `attribute:${item.attribute || ""}` : "state";
   return item.transform ? `${base}:${item.transform}` : base;
 }
@@ -515,7 +520,14 @@ function mappingKey(entityId, objectType, item) {
 }
 
 function sourceLabel(mapping) {
-  return sourceKey(mapping) === "state" ? "State" : sourceKey(mapping).replace("attribute:", "").replaceAll("_", " ");
+  const key = sourceKey(mapping);
+  if (key === "state") {
+    return "State";
+  }
+  if (key === "availability") {
+    return "Availability";
+  }
+  return key.replace("attribute:", "").replaceAll("_", " ");
 }
 
 function lastValueText(mapping) {

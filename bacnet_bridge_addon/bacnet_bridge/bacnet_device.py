@@ -380,6 +380,9 @@ class BACnetBridgeDevice:
 
 def state_to_bacnet_value(mapping: Dict[str, Any], state: Dict[str, Any]) -> Any:
     object_type = mapping["object_type"]
+    if str(mapping.get("source") or "state").lower() == "availability":
+        return _state_available(state.get("state"))
+
     raw_value = _source_value(mapping, state)
     if raw_value is None:
         return None
@@ -415,6 +418,8 @@ def state_to_bacnet_value(mapping: Dict[str, Any], state: Dict[str, Any]) -> Any
 
 def _source_value(mapping: Dict[str, Any], state: Dict[str, Any]) -> Any:
     source = str(mapping.get("source") or "state").lower()
+    if source == "availability":
+        return _state_available(state.get("state"))
     if source != "attribute":
         return state.get("state")
 
@@ -426,6 +431,10 @@ def _source_value(mapping: Dict[str, Any], state: Dict[str, Any]) -> Any:
     if not attribute:
         return None
     return attributes.get(attribute)
+
+
+def _state_available(value: Any) -> bool:
+    return str(value).strip().lower() not in UNKNOWN_STATES
 
 
 def _brightness_to_percent(raw_brightness: Any, raw_state: Any = None) -> Optional[float]:

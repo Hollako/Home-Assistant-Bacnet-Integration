@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.11
+
+- Add publishable Home Assistant entity availability points for BACnet.
+
+## 0.3.10
+
+- Give the BACnet object name editor more room in the mappings table.
+
 ## 0.3.9
 
 - Allow editing the BACnet object name for published mappings.

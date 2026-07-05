@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 
-ARG BUILD_VERSION=0.3.9
+ARG BUILD_VERSION=0.3.11
 LABEL \
   io.hass.version="${BUILD_VERSION}" \
   io.hass.type="app" \

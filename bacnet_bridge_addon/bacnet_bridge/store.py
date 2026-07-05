@@ -240,6 +240,8 @@ def suggest_object_type(
     state = str(entity_state.get("state", "")).lower()
     source = _normalize_source(source, attribute)
 
+    if source == "availability":
+        return "BI"
     if source == "attribute":
         if attribute == "brightness" or transform == "brightness_pct":
             return "AI"
@@ -387,6 +389,15 @@ def point_options(entity_state: Dict[str, Any]) -> List[Dict[str, Any]]:
             allowed_object_types=["AI", "AV"],
         )
 
+    add(
+        "availability",
+        "Availability",
+        "BI",
+        source="availability",
+        value="Available" if _is_available(entity_state.get("state")) else "Unavailable",
+        allowed_object_types=["BI", "BV"],
+    )
+
     return points
 
 
@@ -440,6 +451,8 @@ def _default_units(
     attribute: Optional[str],
     transform: Optional[str],
 ) -> Optional[str]:
+    if source == "availability":
+        return None
     if source == "attribute" and (attribute == "brightness" or transform == "brightness_pct"):
         return "%"
     if source == "attribute" and attribute in {"current_temperature", "temperature"}:
@@ -450,6 +463,8 @@ def _default_units(
 
 
 def _default_writable(entity_state: Dict[str, Any], object_type: str, source: str, attribute: Optional[str]) -> bool:
+    if source == "availability":
+        return False
     entity_id = str(entity_state.get("entity_id", ""))
     domain = entity_id.split(".", 1)[0]
     if source == "attribute":
@@ -503,13 +518,18 @@ def _looks_numeric(value: Any) -> bool:
 def _normalize_source(source: Optional[str], attribute: Optional[str]) -> str:
     if source:
         source = str(source).strip().lower()
-    if source in {"attribute", "state"}:
+    if source in {"attribute", "availability", "state"}:
         return source
     return "attribute" if attribute else "state"
 
 
 def _source_key(source: str, attribute: Optional[str], transform: Optional[str] = None) -> str:
-    base = f"attribute:{attribute}" if source == "attribute" else "state"
+    if source == "availability":
+        base = "availability"
+    elif source == "attribute":
+        base = f"attribute:{attribute}"
+    else:
+        base = "state"
     return f"{base}:{transform}" if transform else base
 
 
@@ -522,9 +542,15 @@ def _mapping_source_key(mapping: Dict[str, Any]) -> str:
 
 
 def _default_point_label(source: str, attribute: Optional[str]) -> str:
+    if source == "availability":
+        return "Availability"
     if source == "attribute" and attribute:
         return str(attribute).replace("_", " ").title()
     return "State"
+
+
+def _is_available(value: Any) -> bool:
+    return str(value).strip().lower() not in {"unknown", "unavailable", "none", ""}
 
 
 def _supports_brightness(entity_state: Dict[str, Any]) -> bool:

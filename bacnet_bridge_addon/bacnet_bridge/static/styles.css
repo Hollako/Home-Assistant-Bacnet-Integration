@@ -154,7 +154,7 @@ select {
 }
 
 .object-name-input {
-  width: min(280px, 100%);
+  width: 100%;
 }
 
 .instance-input.is-invalid,
@@ -173,7 +173,46 @@ select {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 6px;
+}
+
+.mapping-editor {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.mapping-object-row,
+.mapping-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.mapping-object-row strong {
+  flex: 0 0 52px;
+  font-size: 13px;
+}
+
+.object-name-edit {
+  flex: 1 1 auto;
+  min-width: 220px;
+}
+
+.mapping-meta-row {
+  align-items: flex-start;
+}
+
+.mapping-entity {
+  flex: 1 1 auto;
+}
+
+.instance-edit {
+  flex: 0 0 auto;
+}
+
+.mapping-editor .field-error {
+  margin-top: 0;
 }
 
 .field-error {
@@ -332,11 +371,11 @@ td:last-child {
 
 .layout .panel:last-child th:nth-child(1),
 .layout .panel:last-child td:nth-child(1) {
-  width: 176px;
+  width: auto;
 }
 
-.layout .panel:last-child th:nth-child(3),
-.layout .panel:last-child td:nth-child(3) {
+.layout .panel:last-child th:nth-child(2),
+.layout .panel:last-child td:nth-child(2) {
   width: 72px;
 }
 
@@ -443,5 +482,16 @@ tr.is-published td {
 
   .table-wrap {
     max-height: 60vh;
+  }
+
+  .mapping-object-row,
+  .mapping-meta-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .mapping-object-row strong,
+  .object-name-edit {
+    flex-basis: auto;
   }
 }
