@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.5
+
+- Broaden entity search to include Home Assistant state attributes and registry metadata.
+
+## 0.3.4
+
+- Include Home Assistant area names in entity search results.
+
 ## 0.3.3
 
 - Improve entity search with tokenized matching and domain filters.

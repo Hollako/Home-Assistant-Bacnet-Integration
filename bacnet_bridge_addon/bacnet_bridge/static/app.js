@@ -80,6 +80,7 @@ function renderEntities() {
             <div class="entity-name">
               <strong>${escapeHtml(entity.name)}</strong>
               <span>${escapeHtml(entity.entity_id)}</span>
+              ${entity.area_name ? `<span>${escapeHtml(entity.area_name)}</span>` : ""}
               <span>${escapeHtml(point.label || "State")}</span>
             </div>
           </td>
@@ -252,6 +253,12 @@ function entitySearchText(entity, point) {
     entity.entity_id,
     entityDomain(entity),
     entity.name,
+    entity.search_text,
+    entity.registry_name,
+    entity.registry_original_name,
+    entity.registry_search_text,
+    entity.area_name,
+    entity.area_id,
     entity.state,
     entity.unit,
     point.label,

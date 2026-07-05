@@ -49,6 +49,15 @@ class HomeAssistantClient:
             response.raise_for_status()
             await response.read()
 
+    async def get_entity_registry(self) -> List[Dict[str, Any]]:
+        return await self._websocket_command("config/entity_registry/list")
+
+    async def get_area_registry(self) -> List[Dict[str, Any]]:
+        return await self._websocket_command("config/area_registry/list")
+
+    async def get_device_registry(self) -> List[Dict[str, Any]]:
+        return await self._websocket_command("config/device_registry/list")
+
     async def subscribe_state_changes(
         self,
         mapped_entities: Callable[[], Iterable[str]],
@@ -104,3 +113,22 @@ class HomeAssistantClient:
             return
         else:
             raise RuntimeError(f"Unexpected Home Assistant websocket greeting: {first}")
+
+    async def _websocket_command(self, command_type: str) -> Any:
+        async with self.session.ws_connect(self.websocket_url, heartbeat=30) as websocket:
+            await self._authenticate(websocket)
+            await websocket.send_json({"id": 1, "type": command_type})
+            while True:
+                message = await websocket.receive()
+                if message.type == aiohttp.WSMsgType.ERROR:
+                    raise RuntimeError(f"Home Assistant websocket error: {websocket.exception()}")
+                if message.type in {aiohttp.WSMsgType.CLOSE, aiohttp.WSMsgType.CLOSED, aiohttp.WSMsgType.CLOSING}:
+                    raise RuntimeError("Home Assistant websocket closed before command completed")
+                if message.type != aiohttp.WSMsgType.TEXT:
+                    continue
+                payload = message.json()
+                if payload.get("id") != 1:
+                    continue
+                if not payload.get("success", False):
+                    raise RuntimeError(f"Home Assistant command failed: {payload}")
+                return payload.get("result")

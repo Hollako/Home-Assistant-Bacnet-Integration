@@ -251,9 +251,29 @@ def entity_summary(entity_state: Dict[str, Any]) -> Dict[str, Any]:
         "state": entity_state.get("state"),
         "name": attributes.get("friendly_name") or entity_state.get("entity_id"),
         "unit": _state_unit(entity_state),
+        "search_text": _entity_search_text(entity_state),
         "suggested_object_type": points[0]["suggested_object_type"] if points else suggest_object_type(entity_state),
         "points": points,
     }
+
+
+def _entity_search_text(entity_state: Dict[str, Any]) -> str:
+    attributes = entity_state.get("attributes") or {}
+    values: List[Any] = [
+        entity_state.get("entity_id"),
+        entity_state.get("state"),
+    ]
+    for key, value in attributes.items():
+        values.append(key)
+        if _is_searchable_value(value):
+            values.append(value)
+        elif isinstance(value, list):
+            values.extend(item for item in value if _is_searchable_value(item))
+    return " ".join(str(value) for value in values if value is not None and str(value).strip())
+
+
+def _is_searchable_value(value: Any) -> bool:
+    return isinstance(value, (str, int, float, bool))
 
 
 def point_options(entity_state: Dict[str, Any]) -> List[Dict[str, Any]]:
